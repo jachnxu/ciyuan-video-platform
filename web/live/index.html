@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>次元站 · 直播</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23fb7299'/%3E%3Cpath d='M24 20l20 12-20 12z' fill='white'/%3E%3C/svg%3E" />
+<style>
+  :root{
+    --pink:#fb7299; --pink-d:#e85c85; --bg:#f6f7f8; --card:#fff;
+    --text:#18191c; --sub:#61666d; --line:#e3e5e7; --live:#ff4d6a;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font:14px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif}
+  a{color:inherit;text-decoration:none}
+  button{font:inherit;cursor:pointer}
+  .topbar{position:sticky;top:0;z-index:50;height:56px;display:flex;align-items:center;gap:22px;padding:0 24px;background:#fff;border-bottom:1px solid var(--line)}
+  .logo{font-size:20px;font-weight:800;color:var(--pink);letter-spacing:.5px}
+  .topbar nav{display:flex;gap:18px}
+  .topbar nav a{color:var(--sub);font-weight:500;padding:4px 2px}
+  .topbar nav a.active{color:var(--pink);font-weight:700;border-bottom:2px solid var(--pink)}
+  .spacer{flex:1}
+  .user-box{display:flex;align-items:center;gap:10px;color:var(--sub)}
+  .user-box img{width:30px;height:30px;border-radius:50%;object-fit:cover;background:#eee}
+  .btn{border:none;border-radius:8px;padding:8px 16px;background:var(--pink);color:#fff;font-weight:600;transition:.15s}
+  .btn:hover{background:var(--pink-d)}
+  .btn.ghost{background:#fff;color:var(--pink);border:1px solid var(--pink)}
+  .btn.gray{background:#f1f2f3;color:var(--text)}
+  .btn:disabled{opacity:.55;cursor:not-allowed}
+  .wrap{max-width:1180px;margin:0 auto;padding:22px 18px 60px}
+
+  /* 列表 */
+  .section-title{display:flex;align-items:center;gap:12px;margin:6px 0 16px}
+  .section-title h2{font-size:19px;margin:0}
+  .tabs{display:flex;gap:8px;margin-left:auto}
+  .tabs button{border:1px solid var(--line);background:#fff;color:var(--sub);border-radius:20px;padding:6px 16px}
+  .tabs button.on{background:var(--pink);border-color:var(--pink);color:#fff;font-weight:600}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:16px}
+  .card{background:var(--card);border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.06);transition:.18s;cursor:pointer;border:1px solid transparent}
+  .card:hover{transform:translateY(-3px);box-shadow:0 8px 22px rgba(0,0,0,.1);border-color:#f3d4de}
+  .cover{position:relative;aspect-ratio:16/9;background:linear-gradient(135deg,#ffd0dd,#ffe8ef);display:flex;align-items:center;justify-content:center;overflow:hidden}
+  .cover img{width:100%;height:100%;object-fit:cover}
+  .cover .ph{font-size:34px;font-weight:800;color:#fff;opacity:.9}
+  .badge{position:absolute;top:8px;left:8px;background:var(--live);color:#fff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;display:flex;align-items:center;gap:4px}
+  .badge .dot{width:6px;height:6px;border-radius:50%;background:#fff;animation:blink 1.2s infinite}
+  @keyframes blink{50%{opacity:.25}}
+  .badge.off{background:#9aa0a6}
+  .badge.off .dot{animation:none}
+  .viewers{position:absolute;right:8px;bottom:8px;background:rgba(0,0,0,.55);color:#fff;font-size:12px;padding:2px 8px;border-radius:10px}
+  .card .body{padding:10px 12px 12px}
+  .card .t{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:6px}
+  .card .m{display:flex;align-items:center;gap:6px;color:var(--sub);font-size:12.5px}
+  .card .m img{width:20px;height:20px;border-radius:50%;object-fit:cover;background:#eee}
+
+  .empty{padding:80px 0;text-align:center;color:var(--sub)}
+  .empty .big{font-size:40px;margin-bottom:10px}
+
+  /* 房间 */
+  .room{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:18px;align-items:start}
+  .stage{background:#000;border-radius:12px;overflow:hidden;position:relative;aspect-ratio:16/9}
+  .stage video{width:100%;height:100%;object-fit:contain;background:#000;display:block}
+  .stage .offline{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#cfd3d8;gap:10px;background:radial-gradient(circle at 50% 40%,#2a2d33,#101114)}
+  .stage .offline .ic{font-size:44px}
+  .room-info{display:flex;gap:14px;align-items:flex-start;margin-top:14px;background:#fff;border-radius:12px;padding:14px 16px;border:1px solid var(--line)}
+  .room-info .avatar{width:46px;height:46px;border-radius:50%;object-fit:cover;background:#eee;flex:none}
+  .room-info .grow{flex:1;min-width:0}
+  .room-info h1{font-size:18px;margin:0 0 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .room-info .sub{color:var(--sub);font-size:12.5px;display:flex;gap:14px;flex-wrap:wrap}
+  .stat{color:var(--live);font-weight:700}
+
+  /* 聊天 */
+  .chat{background:#fff;border-radius:12px;border:1px solid var(--line);display:flex;flex-direction:column;height:600px;overflow:hidden}
+  .chat h3{margin:0;padding:12px 14px;font-size:14px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px}
+  .chat h3 .n{color:var(--sub);font-weight:400;font-size:12px}
+  .msgs{flex:1;overflow-y:auto;padding:10px 12px;display:flex;flex-direction:column;gap:8px}
+  .msg{font-size:13px;line-height:1.5;word-break:break-word}
+  .msg .u{font-weight:600;margin-right:6px;color:#2a7ae2}
+  .msg .u.host{color:var(--pink)}
+  .msg .sys{color:var(--sub);font-style:italic}
+  .msg .time{color:#b9bdc2;font-size:11px;margin-left:6px}
+  .chat .input{display:flex;gap:8px;padding:10px;border-top:1px solid var(--line)}
+  .chat .input input{flex:1;border:1px solid var(--line);border-radius:8px;padding:9px 12px;outline:none}
+  .chat .input input:focus{border-color:var(--pink)}
+  .chat .input button{border:none;background:var(--pink);color:#fff;border-radius:8px;padding:0 16px;font-weight:600}
+  .chat .input button:disabled{opacity:.5}
+
+  /* 开播 */
+  .panel{background:#fff;border:1px solid var(--line);border-radius:12px;padding:22px;max-width:760px;margin:0 auto}
+  .panel h2{margin:0 0 6px;font-size:20px}
+  .panel .hint{color:var(--sub);margin-bottom:18px}
+  .field{margin-bottom:14px}
+  .field label{display:block;font-weight:600;margin-bottom:6px;font-size:13px}
+  .field input{width:100%;border:1px solid var(--line);border-radius:8px;padding:10px 12px;outline:none}
+  .field input:focus{border-color:var(--pink)}
+  .row{display:flex;gap:10px;flex-wrap:wrap}
+  .pushbox{background:#0f1115;color:#e6e6e6;border-radius:10px;padding:14px 16px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px;word-break:break-all;margin:10px 0}
+  .pushbox .k{color:#8b93a1;display:block;font-size:11px;margin-bottom:3px;font-family:inherit}
+  .steps{background:#fff8fa;border:1px solid #ffe0e9;border-radius:10px;padding:14px 16px;margin-top:16px}
+  .steps ol{margin:6px 0 0;padding-left:20px;color:#4a4f57}
+  .steps li{margin:5px 0}
+  .status-pill{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;padding:3px 10px;border-radius:12px}
+  .status-pill.on{background:#ffe8ee;color:var(--live)}
+  .status-pill.off{background:#eef0f2;color:#6b7078}
+
+  .toast{position:fixed;left:50%;bottom:36px;transform:translateX(-50%) translateY(20px);background:rgba(24,25,28,.92);color:#fff;padding:10px 18px;border-radius:10px;font-size:13px;opacity:0;pointer-events:none;transition:.25s;z-index:99;max-width:80vw}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+  @media (max-width:900px){
+    .room{grid-template-columns:1fr}
+    .chat{height:420px}
+  }
+  @media (max-width:560px){
+    .topbar{padding:0 12px;gap:12px}
+    .topbar nav a:not(.active){display:none}
+    .wrap{padding:14px 10px 50px}
+    .grid{grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px}
+    .card .t{font-size:13px}
+  }
+</style>
+</head>
+<body>
+<header class="topbar">
+  <a class="logo" href="/">次元站</a>
+  <nav>
+    <a href="/">首页</a>
+    <a href="/live/" class="active">直播</a>
+    <a href="/rank">排行榜</a>
+  </nav>
+  <div class="spacer"></div>
+  <div id="userBox" class="user-box"></div>
+</header>
+
+<main id="app" class="wrap"></main>
+<div id="toast" class="toast"></div>
+
+<script src="/live/hls.min.js"></script>
+<script>
+(function(){
+  "use strict";
+  var TOKEN_KEY = "cy_token";
+  var app = document.getElementById("app");
+  var me = null;
+  var hls = null;
+  var timers = [];
+  var lastMsgId = 0;
+  var curRoomId = null;
+  var cam = { stream:null, ws:null, recorder:null, active:false };
+
+  function tok(){ return localStorage.getItem(TOKEN_KEY) || ""; }
+  function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g, function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];}); }
+  function toast(msg){
+    var t = document.getElementById("toast");
+    t.textContent = msg; t.classList.add("show");
+    clearTimeout(t._h); t._h = setTimeout(function(){ t.classList.remove("show"); }, 2200);
+  }
+  function clearTimers(){ timers.forEach(function(t){ clearInterval(t); clearTimeout(t); }); timers = []; if(hls){ try{hls.destroy();}catch(e){} hls = null; } if(cam && cam.active){ try{ stopCamera(); }catch(e){} } }
+
+  async function api(path, opts){
+    opts = opts || {};
+    var headers = {};
+    if (opts.body !== undefined) headers["Content-Type"] = "application/json";
+    if (tok()) headers["Authorization"] = "Bearer " + tok();
+    var res = await fetch("/api" + path, {
+      method: opts.method || "GET",
+      headers: headers,
+      body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined
+    });
+    var j;
+    try { j = await res.json(); } catch(e){ throw new Error("网络异常"); }
+    if (j.code === 401) { me = null; renderUser(); throw new Error("请先登录"); }
+    if (j.code !== 0) throw new Error(j.msg || "请求失败");
+    return j.data;
+  }
+
+  function renderUser(){
+    var box = document.getElementById("userBox");
+    if (me) {
+      box.innerHTML = '<img src="' + esc(me.avatar || '') + '" onerror="this.style.visibility=\'hidden\'" alt="">' +
+        '<span>' + esc(me.nickname || me.username) + '</span>' +
+        '<button class="btn ghost" id="myBtn">我的直播</button>';
+      var b = document.getElementById("myBtn");
+      if (b) b.onclick = function(){ location.hash = "#/broadcast"; };
+    } else {
+      box.innerHTML = '<a class="btn" href="/login">登录</a>';
+    }
+  }
+
+  async function loadMe(){
+    if (!tok()) { me = null; renderUser(); return; }
+    try { me = await api("/auth/me"); } catch(e){ me = null; }
+    renderUser();
+  }
+
+  function fmtNum(n){ n = n||0; if (n >= 10000) return (n/10000).toFixed(1) + "万"; return String(n); }
+  function coverHtml(r){
+    if (r.cover) return '<img src="' + esc(r.cover) + '" alt="" onerror="this.style.display=\'none\'">';
+    return '<div class="ph">' + esc((r.title||"L").slice(0,1)) + '</div>';
+  }
+
+  // ---------------- 列表 ----------------
+  var listFilter = "all";
+  async function renderList(){
+    clearTimers(); curRoomId = null;
+    app.innerHTML = '<div class="section-title"><h2>正在直播</h2>' +
+      '<div class="tabs"><button data-f="all" class="on">全部</button><button data-f="1">直播中</button>' +
+      '<button class="btn" id="goLive">我要开播</button></div></div>' +
+      '<div id="grid" class="grid"></div>';
+    document.getElementById("goLive").onclick = function(){ location.hash = "#/broadcast"; };
+    app.querySelectorAll(".tabs button[data-f]").forEach(function(b){
+      b.onclick = function(){
+        listFilter = b.getAttribute("data-f");
+        app.querySelectorAll(".tabs button[data-f]").forEach(function(x){ x.classList.remove("on"); });
+        b.classList.add("on"); loadRooms();
+      };
+    });
+    loadRooms();
+  }
+
+  async function loadRooms(){
+    var grid = document.getElementById("grid");
+    if (!grid) return;
+    grid.innerHTML = '<div class="empty" style="grid-column:1/-1">加载中…</div>';
+    try {
+      var q = "/live/rooms?page=1&size=48" + (listFilter === "1" ? "&status=1" : "");
+      var d = await api(q);
+      var list = d.list || [];
+      if (!list.length) {
+        grid.innerHTML = '<div class="empty" style="grid-column:1/-1"><div class="big">📺</div>还没有直播间，点右上角「我要开播」做第一个主播吧</div>';
+        return;
+      }
+      grid.innerHTML = list.map(function(r){
+        var on = r.status === 1;
+        return '<div class="card" data-id="' + r.id + '">' +
+          '<div class="cover">' + coverHtml(r) +
+            (on ? '<span class="badge"><span class="dot"></span>直播中</span>' : '<span class="badge off"><span class="dot"></span>' + (r.status===2?'已结束':'未开播') + '</span>') +
+            '<span class="viewers">👁 ' + fmtNum(r.viewers) + '</span>' +
+          '</div>' +
+          '<div class="body"><div class="t">' + esc(r.title) + '</div>' +
+            '<div class="m"><img src="' + esc((r.author&&r.author.avatar)||'') + '" onerror="this.style.visibility=\'hidden\'" alt="">' +
+            '<span>' + esc((r.author&&(r.author.nickname||r.author.username))||'主播') + '</span>' +
+            '<span style="margin-left:auto">❤ ' + fmtNum(r.likeCount) + '</span></div></div>' +
+        '</div>';
+      }).join("");
+      grid.querySelectorAll(".card").forEach(function(c){
+        c.onclick = function(){ location.hash = "#/room/" + c.getAttribute("data-id"); };
+      });
+    } catch(e){
+      grid.innerHTML = '<div class="empty" style="grid-column:1/-1">加载失败：' + esc(e.message) + '</div>';
+    }
+  }
+
+  // ---------------- 房间 ----------------
+  async function renderRoom(id){
+    clearTimers(); curRoomId = id; lastMsgId = 0;
+    app.innerHTML = '<div class="empty">加载中…</div>';
+    var r;
+    try { r = await api("/live/rooms/" + id); }
+    catch(e){ app.innerHTML = '<div class="empty"><div class="big">😢</div>' + esc(e.message) + '</div>'; return; }
+    curRoomAuthorId = r.userId || 0;
+
+    var on = r.status === 1;
+    var author = (r.author && (r.author.nickname || r.author.username)) || "主播";
+    app.innerHTML =
+      '<div class="room">' +
+        '<div>' +
+          '<div class="stage" id="stage">' +
+            '<video id="player" playsinline controls ' + (on ? '' : 'style="display:none"') + '></video>' +
+            '<div class="offline" id="offline" ' + (on ? 'style="display:none"' : '') + '>' +
+              '<div class="ic">📡</div><div>' + (r.status === 2 ? "本场直播已结束" : "主播暂未开播") + '</div>' +
+            '</div>' +
+          '</div>' +
+          '<div class="room-info">' +
+            '<img class="avatar" src="' + esc((r.author&&r.author.avatar)||'') + '" onerror="this.style.visibility=\'hidden\'" alt="">' +
+            '<div class="grow"><h1>' + esc(r.title) + '</h1>' +
+              '<div class="sub"><span>' + esc(author) + '</span>' +
+                '<span>在线 <b class="stat" id="online">' + fmtNum(r.viewers) + '</b></span>' +
+                '<span>累计 ' + fmtNum(r.totalViewers) + '</span>' +
+                '<span>' + (on ? "直播中" : "未开播") + '</span></div>' +
+            '</div>' +
+            '<button class="btn ghost" id="likeBtn">❤ 点赞 <span id="likeCount">' + fmtNum(r.likeCount) + '</span></button>' +
+          '</div>' +
+        '</div>' +
+        '<div class="chat">' +
+          '<h3>弹幕互动 <span class="n" id="msgHint"></span></h3>' +
+          '<div class="msgs" id="msgs"></div>' +
+          '<div class="input"><input id="chatInput" maxlength="200" placeholder="发个弹幕，和大家聊聊…" />' +
+            '<button id="sendBtn">发送</button></div>' +
+        '</div>' +
+      '</div>';
+
+    if (on && r.playUrl) waitAndPlay(r.playUrl);
+    if (!on) {
+      // 观众先进房间：轮询房间状态，主播开播后自动加载
+      timers.push(setInterval(async function(){
+        try { var rr = await api("/live/rooms/" + id); if (rr.status === 1) renderRoom(id); } catch(e){}
+      }, 8000));
+    }
+
+    document.getElementById("sendBtn").onclick = function(){ sendMsg(id); };
+    document.getElementById("chatInput").addEventListener("keydown", function(e){ if (e.key === "Enter") sendMsg(id); });
+    document.getElementById("likeBtn").onclick = function(){ doLike(id); };
+
+    // 首屏消息
+    await pollMessages(id, true);
+    timers.push(setInterval(function(){ pollMessages(id, false); }, 3000));
+    // 在线人数
+    timers.push(setInterval(function(){ refreshOnline(id); }, 8000));
+    // 心跳（登录用户）
+    if (tok()) {
+      heartbeat(id);
+      timers.push(setInterval(function(){ heartbeat(id); }, 15000));
+    }
+  }
+
+  async function waitAndPlay(url){
+    var tries = 0;
+    function tick(){
+      fetch(url, { method: "HEAD", cache: "no-store" }).then(function(res){
+        if (res.ok) { play(url); return; }
+        retry();
+      }).catch(retry);
+    }
+    function retry(){
+      tries++;
+      if (tries < 150) timers.push(setTimeout(tick, 2000));
+    }
+    tick();
+  }
+
+  function play(url){
+    var v = document.getElementById("player");
+    if (!v) return;
+    if (window.Hls && Hls.isSupported()) {
+      hls = new Hls({ liveDurationInfinity: true, lowLatencyMode: true });
+      hls.loadSource(url);
+      hls.attachMedia(v);
+      hls.on(Hls.Events.MANIFEST_PARSED, function(){ v.play().catch(function(){}); });
+      hls.on(Hls.Events.ERROR, function(evt, data){
+        if (data && data.fatal) {
+          var off = document.getElementById("offline");
+          if (off) { off.style.display = "flex"; off.innerHTML = '<div class="ic">📡</div><div>直播信号连接中…</div>'; }
+        }
+      });
+    } else if (v.canPlayType("application/vnd.apple.mpegurl")) {
+      v.src = url; v.play().catch(function(){});
+    } else {
+      toast("当前浏览器不支持 HLS 播放");
+    }
+  }
+
+  async function pollMessages(id, first){
+    try {
+      var list = await api("/live/rooms/" + id + "/messages?afterId=" + lastMsgId + "&limit=50");
+      if (!list || !list.length) return;
+      list.forEach(function(m){ if (m.id > lastMsgId) lastMsgId = m.id; });
+      appendMessages(list, first);
+    } catch(e){ /* 静默 */ }
+  }
+
+  function appendMessages(list, replace){
+    var box = document.getElementById("msgs");
+    if (!box) return;
+    if (replace) box.innerHTML = "";
+    var nearBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 80;
+    var hostId = (curRoomAuthorId || 0);
+    list.forEach(function(m){
+      var d = document.createElement("div");
+      d.className = "msg";
+      var name = (m.user && (m.user.nickname || m.user.username)) || "用户";
+      var time = (m.createdAt || "").slice(11, 16);
+      if (m.type === 2) {
+        d.innerHTML = '<span class="sys">' + esc(m.content) + '</span>';
+      } else if (m.type === 3) {
+        d.innerHTML = '<span class="sys">' + esc(name) + ' 进入直播间</span>';
+      } else {
+        var cls = (m.userId && m.userId === hostId) ? "u host" : "u";
+        d.innerHTML = '<span class="' + cls + '">' + esc(name) + '：</span>' +
+          '<span style="color:' + esc(m.color || '#333') + '">' + esc(m.content) + '</span>' +
+          '<span class="time">' + esc(time) + '</span>';
+      }
+      box.appendChild(d);
+    });
+    if (nearBottom) box.scrollTop = box.scrollHeight;
+  }
+
+  async function sendMsg(id){
+    var input = document.getElementById("chatInput");
+    var content = (input.value || "").trim();
+    if (!content) return;
+    if (!tok()) { toast("请先登录后再发言"); return; }
+    var btn = document.getElementById("sendBtn"); btn.disabled = true;
+    try {
+      var m = await api("/live/rooms/" + id + "/messages", { method:"POST", body:{ content: content, type: 0, color: "#18191c" } });
+      input.value = "";
+      if (m && m.id > lastMsgId) lastMsgId = m.id;
+      appendMessages([m], false);
+    } catch(e){ toast(e.message); }
+    finally { btn.disabled = false; }
+  }
+
+  async function doLike(id){
+    if (!tok()) { toast("请先登录"); return; }
+    try {
+      var d = await api("/live/rooms/" + id + "/like", { method:"POST" });
+      var c = document.getElementById("likeCount");
+      if (c) c.textContent = fmtNum(d.count);
+      toast(d.active ? "点赞成功 ❤" : "已取消点赞");
+    } catch(e){ toast(e.message); }
+  }
+
+  async function refreshOnline(id){
+    try { var d = await api("/live/rooms/" + id + "/online"); var o = document.getElementById("online"); if (o) o.textContent = fmtNum(d.viewers); }
+    catch(e){}
+  }
+  async function heartbeat(id){
+    try { var d = await api("/live/rooms/" + id + "/heartbeat", { method:"POST" }); var o = document.getElementById("online"); if (o) o.textContent = fmtNum(d.viewers); }
+    catch(e){}
+  }
+
+  // ---------------- 开播 ----------------
+  async function renderBroadcast(){
+    clearTimers(); curRoomId = null;
+    if (!tok()) {
+      app.innerHTML = '<div class="panel"><h2>我要开播</h2><div class="hint">开播需要一个账号。</div>' +
+        '<a class="btn" href="/login">去登录</a></div>';
+      return;
+    }
+    app.innerHTML = '<div class="empty">加载中…</div>';
+    var room;
+    try { room = await api("/live/my"); }
+    catch(e){ app.innerHTML = '<div class="empty">' + esc(e.message) + '</div>'; return; }
+
+    if (!room) {
+      app.innerHTML = '<div class="panel"><h2>创建我的直播间</h2>' +
+        '<div class="hint">创建后可获得推流地址，用 OBS 推流即可开播。</div>' +
+        '<div class="field"><label>直播标题</label><input id="fTitle" maxlength="120" placeholder="给直播间起个名字，比如：深夜电台"></div>' +
+        '<div class="field"><label>封面地址（可选）</label><input id="fCover" placeholder="/media/... 或留空"></div>' +
+        '<button class="btn" id="createBtn">创建直播间</button></div>';
+      document.getElementById("createBtn").onclick = async function(){
+        var title = document.getElementById("fTitle").value.trim();
+        if (!title) { toast("请填写直播标题"); return; }
+        var cover = document.getElementById("fCover").value.trim();
+        this.disabled = true;
+        try {
+          await api("/live/rooms", { method:"POST", body:{ title: title, cover: cover || null, categoryId: 0 } });
+          toast("创建成功");
+          renderBroadcast();
+        } catch(e){ toast(e.message); this.disabled = false; }
+      };
+      return;
+    }
+
+    var on = room.status === 1;
+    app.innerHTML = '<div class="panel">' +
+      '<h2>我的直播间 <span class="status-pill ' + (on ? 'on' : 'off') + '">' + (on ? '● 直播中' : (room.status===2?'已结束':'未开播')) + '</span></h2>' +
+      '<div class="hint">' + esc(room.title) + '</div>' +
+      '<div class="pushbox"><span class="k">推流地址（OBS 服务器）</span>rtmp://121.43.245.66:1935/live</div>' +
+      '<div class="pushbox"><span class="k">串流密钥（Stream Key）</span>' + esc(room.streamKey) + '</div>' +
+      '<div class="row">' +
+        '<button class="btn gray" id="copyPush">复制推流地址</button>' +
+        (on ? '<button class="btn" id="stopBtn">结束直播</button>'
+            : '<button class="btn" id="startBtn">开始直播</button>') +
+        '<button class="btn ghost" id="viewBtn">查看直播间</button>' +
+      '</div>' +
+      '<div class="steps"><b>OBS 推流步骤</b><ol>' +
+        '<li>OBS → 设置 → 推流 → 服务选「自定义」</li>' +
+        '<li>服务器填 <code>rtmp://121.43.245.66:1935/live</code></li>' +
+        '<li>串流密钥填上面的 Stream Key</li>' +
+        '<li>点上方「开始直播」，再到 OBS 点「开始推流」</li>' +
+      '</ol></div>' +
+      '<div class="hint" style="margin-top:14px">观众观看走 80 端口 HLS，无需额外放行；推流需要安全组放行 TCP 1935。</div>' +
+      '<div class="steps" style="margin-top:16px"><b>方式二：网页直接用摄像头开播</b>' +
+        '<p class="hint" style="margin:8px 0">无需 OBS，点按钮授权摄像头即可开播（本页需用 HTTPS 访问）。</p>' +
+        '<div id="camArea"><button class="btn" id="camBtn">使用摄像头开播</button></div>' +
+      '</div>' +
+      '</div>';
+
+    var copyBtn = document.getElementById("copyPush");
+    copyBtn.onclick = function(){
+      var text = "rtmp://121.43.245.66:1935/live";
+      (navigator.clipboard ? navigator.clipboard.writeText(text) : Promise.reject())
+        .then(function(){ toast("已复制"); })
+        .catch(function(){ toast(text); });
+    };
+    document.getElementById("viewBtn").onclick = function(){ location.hash = "#/room/" + room.id; };
+    var startBtn = document.getElementById("startBtn");
+    if (startBtn) startBtn.onclick = async function(){
+      this.disabled = true;
+      try { await api("/live/rooms/" + room.id + "/start", { method:"POST" }); toast("已开播"); renderBroadcast(); }
+      catch(e){ toast(e.message); this.disabled = false; }
+    };
+    var stopBtn = document.getElementById("stopBtn");
+    if (stopBtn) stopBtn.onclick = async function(){
+      this.disabled = true;
+      try { await api("/live/rooms/" + room.id + "/stop", { method:"POST" }); toast("已结束直播"); renderBroadcast(); }
+      catch(e){ toast(e.message); this.disabled = false; }
+    };
+    var camBtn = document.getElementById("camBtn");
+    if (camBtn) camBtn.onclick = function(){ startCamera(room); };
+  }
+
+  async function startCamera(room){
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      toast("当前环境不支持摄像头，请用 HTTPS 打开本页"); return;
+    }
+    if (cam.active) { toast("摄像头直播进行中"); return; }
+    var stream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({
+        video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: "user" },
+        audio: true
+      });
+    } catch(e) { toast("无法打开摄像头：" + (e.message || e)); return; }
+    cam.stream = stream;
+
+    var area = document.getElementById("camArea");
+    if (!area) { toast("页面已切换，请重试"); return; }
+    area.innerHTML = '<video id="camPreview" autoplay muted playsinline style="width:100%;max-width:460px;border-radius:10px;background:#000"></video>' +
+      '<div class="row" style="margin-top:10px;align-items:center"><button class="btn" id="camStop">停止摄像头直播</button><span class="hint" id="camState">连接中…</span></div>';
+    var v = document.getElementById("camPreview");
+    if (v) v.srcObject = stream;
+    document.getElementById("camStop").onclick = function(){ stopCamera(); renderBroadcast(); };
+
+    var types = ["video/webm;codecs=vp8,opus","video/webm;codecs=vp9,opus","video/webm","video/mp4;codecs=avc1.42E01E,mp4a.40.2","video/mp4"];
+    var mime = "";
+    for (var i = 0; i < types.length; i++) {
+      if (window.MediaRecorder && MediaRecorder.isTypeSupported(types[i])) { mime = types[i]; break; }
+    }
+    if (!mime) { toast("浏览器不支持录制"); stopCamera(); return; }
+    var fmt = mime.indexOf("mp4") >= 0 ? "mp4" : "webm";
+
+    var proto = location.protocol === "https:" ? "wss://" : "ws://";
+    var url = proto + location.host + "/ws/live/" + encodeURIComponent(room.streamKey) +
+      "?token=" + encodeURIComponent(tok()) + "&fmt=" + fmt;
+    var ws = new WebSocket(url);
+    cam.ws = ws;
+    ws.binaryType = "arraybuffer";
+    ws.onopen = function(){
+      var rec = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 1500000, audioBitsPerSecond: 128000 });
+      cam.recorder = rec;
+      rec.ondataavailable = function(e){ if (e.data && e.data.size > 0 && ws.readyState === 1) ws.send(e.data); };
+      rec.start(1000);
+      cam.active = true;
+      var s = document.getElementById("camState"); if (s) s.textContent = "● 直播中";
+      var pill = document.querySelector(".status-pill");
+      if (pill) { pill.className = "status-pill on"; pill.textContent = "● 直播中"; }
+      toast("摄像头直播已开始");
+    };
+    ws.onerror = function(){ toast("推流连接失败，请确认已登录"); };
+    ws.onclose = function(){
+      var s = document.getElementById("camState");
+      if (s) s.textContent = "已断开";
+      if (cam.active) cam.active = false;
+    };
+  }
+
+  function stopCamera(){
+    try { if (cam.recorder && cam.recorder.state !== "inactive") cam.recorder.stop(); } catch(e){}
+    try { if (cam.ws && cam.ws.readyState <= 1) cam.ws.close(); } catch(e){}
+    try { if (cam.stream) cam.stream.getTracks().forEach(function(t){ t.stop(); }); } catch(e){}
+    cam = { stream:null, ws:null, recorder:null, active:false };
+  }
+
+  // ---------------- 路由 ----------------
+  var curRoomAuthorId = 0;
+  async function route(){
+    var h = location.hash.replace(/^#/, "") || "/";
+    clearTimers();
+    if (h === "/" || h === "") { renderList(); return; }
+    if (h === "/broadcast") { renderBroadcast(); return; }
+    var m = h.match(/^\/room\/(\d+)$/);
+    if (m) { curRoomAuthorId = 0; renderRoom(parseInt(m[1], 10)); return; }
+    renderList();
+  }
+
+  window.addEventListener("hashchange", route);
+  document.addEventListener("DOMContentLoaded", async function(){
+    await loadMe();
+    route();
+  });
+})();
+</script>
+</body>
+</html>

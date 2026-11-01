@@ -1,0 +1,22 @@
+[Unit]
+Description=CiYuan Video Server
+After=network.target mysql.service
+Wants=mysql.service
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/ciyuan
+EnvironmentFile=-/opt/ciyuan/ai.env
+Environment="TZ=Asia/Shanghai"
+Environment="JAVA_TOOL_OPTIONS=-Xms256m -Xmx512m -XX:MaxMetaspaceSize=192m -XX:+UseSerialGC -Djava.security.egd=file:/dev/./urandom"
+ExecStart=/usr/bin/java -jar /opt/ciyuan/app.jar
+Restart=always
+RestartSec=6
+SuccessExitStatus=143
+StandardOutput=append:/opt/ciyuan/logs/stdout.log
+StandardError=append:/opt/ciyuan/logs/stderr.log
+LimitNOFILE=65535
+
+[Install]
+WantedBy=multi-user.target

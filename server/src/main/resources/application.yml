@@ -1,0 +1,71 @@
+server:
+  port: 8080
+  tomcat:
+    max-swallow-size: -1
+    threads:
+      max: 60
+    connection-timeout: 60000
+  compression:
+    enabled: true
+    mime-types: application/json,text/html,text/css,application/javascript
+
+spring:
+  application:
+    name: ciyuan-server
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://${DB_HOST:127.0.0.1}:${DB_PORT:3306}/ciyuan?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false&rewriteBatchedStatements=true
+    username: ${DB_USER:ciyuan}
+    password: ${DB_PASSWORD:}
+    hikari:
+      maximum-pool-size: 12
+      minimum-idle: 3
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 4096MB
+      max-request-size: 4096MB
+      file-size-threshold: 4MB
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: Asia/Shanghai
+    default-property-inclusion: always
+  mvc:
+    async:
+      request-timeout: 600000
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.nologging.NoLoggingImpl
+  global-config:
+    banner: false
+    db-config:
+      id-type: auto
+
+ciyuan:
+  storage: /opt/ciyuan/storage
+  media-prefix: /media
+  # ⚠️ 生产环境必须用环境变量覆盖，否则任何人都能伪造登录态
+  jwt-secret: ${CIYUAN_JWT_SECRET:dev-only-insecure-secret-please-change-in-production}
+  jwt-expire-days: 14
+  ffmpeg: ffmpeg
+  ffprobe: ffprobe
+  # 大模型推荐：Key 从环境变量 CIYUAN_AI_KEY 读取，不写死在配置文件里
+  ai:
+    api-key: ${CIYUAN_AI_KEY:}
+    base-url: https://api.deepseek.com
+    model: deepseek-chat
+    timeout-seconds: 60
+    max-candidates: 24
+
+logging:
+  level:
+    root: info
+    com.ciyuan: info
+  file:
+    name: /opt/ciyuan/logs/app.log
+  logback:
+    rollingpolicy:
+      max-file-size: 20MB
+      max-history: 7

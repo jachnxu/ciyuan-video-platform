@@ -1,0 +1,42 @@
+# ---------- Java / Maven ----------
+target/
+*.class
+*.jar
+*.war
+!.mvn/wrapper/maven-wrapper.jar
+
+# ---------- Gradle / Android ----------
+.gradle/
+build/
+local.properties
+*.apk
+*.aab
+captures/
+.externalNativeBuild/
+.cxx/
+
+# ---------- 日志 ----------
+*.log
+logs/
+
+# ---------- 媒体与运行时数据 ----------
+storage/
+*.mp4
+*.m3u8
+*.ts
+
+# ---------- 密钥与环境变量 ----------
+.env
+*.env
+ai.env
+!*.env.example
+
+# ---------- IDE / OS ----------
+.idea/
+*.iml
+.vscode/
+.settings/
+.project
+.classpath
+.DS_Store
+Thumbs.db
